@@ -1,0 +1,20 @@
+Opening graph file...
+Graph file {graphs/CA-AstroPh.txt} Opened
+Adjacency List initiated.
+Number of nodes: 133279
+0:Sending `begin` message!
+1:Total vertices: 133279
+1:Expecting to receive 16660 vertices
+2:Total vertices: 133279
+3:Total vertices: 133279
+3:Expecting to receive 16660 vertices
+4:Total vertices: 133279
+4:Expecting to receive 16660 vertices
+5:Total vertices: 133279
+5:Expecting to receive 16660 vertices
+6:Total vertices: 133279
+6:Expecting to receive 16660 vertices
+7:Total vertices: 133279
+7:Expecting to receive 16659 vertices
+2:Expecting to receive 16660 vertices
+Fohsh: 14314

@@ -1,0 +1,44 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/taha/CLionProjects/ConnectedComponents/main.cpp
+iostream
+-
+vector
+-
+ctime
+-
+cstdlib
+-
+random
+-
+cmath
+-
+map
+-
+iomanip
+-
+unistd.h
+-
+mpi.h
+-
+
+/usr/local/Cellar/open-mpi/4.0.1/include/mpi.h
+stddef.h
+-
+mpi_portable_platform.h
+/usr/local/Cellar/open-mpi/4.0.1/include/mpi_portable_platform.h
+openmpi/ompi/mpi/cxx/mpicxx.h
+/usr/local/Cellar/open-mpi/4.0.1/include/openmpi/ompi/mpi/cxx/mpicxx.h
+
+/usr/local/Cellar/open-mpi/4.0.1/include/mpi_portable_platform.h
+omp.h
+/usr/local/Cellar/open-mpi/4.0.1/include/omp.h
+omp.h
+/usr/local/Cellar/open-mpi/4.0.1/include/omp.h
+
