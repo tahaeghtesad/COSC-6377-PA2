@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
 
 
     if (rank == 0) {
-        cerr << rank << ": " << "The algorithm is finished. Number of Connected Components: " << current_component + 1
+        cerr << rank << ": " << "The algorithm is finished. Number of Connected Components: " << current_component
              << endl;
     }
 
