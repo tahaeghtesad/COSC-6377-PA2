@@ -32,7 +32,7 @@ using namespace std;
 #define BFS_MESSAGE_LENGTH 4
 
 
-#define cout if(true)cout
+#define cout if(false)cout
 
 
 random_device rd;
