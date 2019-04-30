@@ -32,17 +32,18 @@ using namespace std;
 #define BFS_MESSAGE_LENGTH 4
 
 
-#define cout if(false)cout
+#define cout if(true)cout
 
 
 random_device rd;
 mt19937 gen(rd());
 uniform_int_distribution<> gen_dis(0, numeric_limits<int>::max());
 
-int max_node = -1;
 unordered_map<int, vector<int> > adj;
 
 void init_adj_file(char *path) {
+
+    int edges = 0;
 
     cout << "Opening graph file..." << endl;
 
@@ -63,12 +64,15 @@ void init_adj_file(char *path) {
 
     int u, v;
     while (fin >> u >> v) {
+
         adj[u].push_back(v);
-        if (u > max_node) max_node = u + 1;
+        adj[v].push_back(u);
+
+        edges ++;
     }
 
 //    cout << "Adjacency List initiated." << endl;
-//    cout << "Number of nodes: " << adj.size() << endl;
+    cout << "Number of vertices/edges: " << adj.size() << "/" << edges << endl;
 }
 
 
@@ -145,7 +149,7 @@ int main(int argc, char *argv[]) {
         MPI_Status status;
 
         do {
-            int* buff = new int[550];
+            int* buff = new int[2500];
             MPI_Recv(buff, MAX_NODES, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
             int u = buff[0];
@@ -275,6 +279,7 @@ int main(int argc, char *argv[]) {
             } else if (buff[1] == DECLINED) {
                 cout << rank << ": " << "{" << buff[0] << "} Declined RSVP." << endl;
                 explore_set[buff[2]].erase(buff[0]);
+                cout << rank << ": " << "Removing {" << buff[0] << "} from explore set of {" << buff[2] << "}. New size: " << explore_set[buff[2]].size() << endl;
                 if (explore_set[buff[2]].empty()) {
                     cout << rank << ": " << "{" << buff[2]
                          << "} has already visited all of its children. Sending done to parent." << endl;
@@ -305,9 +310,10 @@ int main(int argc, char *argv[]) {
 
                 } else {
                     explore_set[buff[2]].erase(buff[0]);
+                    cout << rank << ": " << "Removing {" << buff[0] << "} from explore set of {" << buff[2] << "}. New size: " << explore_set[buff[2]].size() << endl;
                     if (explore_set[buff[2]].empty()) {
                         cout << rank << ": " << "{" << buff[2]
-                             << "} has already visited all of its children. Sending done to parent." << endl;
+                             << "} has already visited all of its children. Sending done to parent {" << parent[buff[2]] << "}." << endl;
                         int send_buff[] = {buff[2], DONE, parent[buff[2]], -1};
                         MPI_Send(send_buff, BFS_MESSAGE_LENGTH, MPI_INT, parent[buff[2]] % size, BFS_TAG,
                                  MPI_COMM_WORLD);
