@@ -35,13 +35,13 @@ uniform_int_distribution<> gen_dis(0, numeric_limits<int>::max());
 vector<vector<int> > adj(MAX_NODES);
 int max_node = -1;
 
-void init_adj_file(){
+void init_adj_file(char* path){
 
     cout << "Opening graph file..." << endl;
 
     fstream fin;
 
-    char path[] = "graphs/CA-AstroPh.txt";
+//    char path[] = "graphs/CA-AstroPh.txt";
 //    char path[] = "graphs/facebook_combined.txt";
 //    char path[] = "graphs/roadNet-TX.txt";
 
@@ -81,8 +81,8 @@ int root = 0;
 
 
 bool over(){
-    for (vector<int>::iterator it = my_nodes.begin(); it < my_nodes.end(); it++){
-        if (done[*it] == false)
+    for (int i = 0; i < my_nodes.size(); i++){
+        if (done[my_nodes[i]] == false)
             return false;
     }
     return true;
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
     if (rank == 0) {
         cout << "Initiating graph!" << endl;
-        init_adj_file();
+        init_adj_file(argv[1]);
 
         cout << rank << ": " << "Sending 'begin' message!" << endl;
         for (int i = 1; i < size; i++) {
@@ -178,14 +178,17 @@ int main(int argc, char* argv[]) {
             }
             my_nodes.push_back(u);
 
+//            cout << rank << ":" << "I have node {" << u << "}" << endl;
+
 //            cout << rank << ":" << "Received adjacency list of vertex {" << u << "} with length {" << len << "}" << endl;
 
         }
     }
+    // losd is over
 
     if (rank == 0) {
         cout << rank << ": Initiating BFS" << endl;
-        int buff[] = {0, RSVP, 0, current_component}; //RSVP: who am I, what am I saying, To whom, current_component
+        int buff[] = {-size, RSVP, 0, current_component}; //RSVP: who am I, what am I saying, To whom, current_component
         MPI_Send(buff, 4, MPI_INT, 0, BFS_TAG, MPI_COMM_WORLD);
     }
 
@@ -194,6 +197,7 @@ int main(int argc, char* argv[]) {
 
     while (!over()) {
         MPI_Recv(buff, BFS_MESSAGE_LENGTH, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        cout << rank << ": " << "From: " << buff[0] << " /To: " << buff[2] << " /MSG: " << buff[1] << " /CMP: " << buff[3] << endl;
 
         if (buff[1] == RSVP){
             if (parent.find(buff[2]) == parent.end()) {
@@ -204,12 +208,15 @@ int main(int argc, char* argv[]) {
                 for (int i = 0; i < my_adj[buff[2]].size(); i++) {
                     int send_buff[] = {buff[2], RSVP, my_adj[buff[2]][i], buff[3]};
                     MPI_Send(send_buff, BFS_MESSAGE_LENGTH, MPI_INT, my_adj[buff[2]][i] % size, BFS_TAG, MPI_COMM_WORLD);
+                    cout << rank << ": " << "{" << buff[2] << "} is RSVPing {" << my_adj[buff[2]][i] << "}" << endl;
                 }
 
                 int send_buff[] = {buff[2], ACCEPTED, buff[0], current_component};
                 MPI_Send(send_buff, BFS_MESSAGE_LENGTH, MPI_INT, buff[0] % size, BFS_TAG, MPI_COMM_WORLD);
 
                 if (my_adj[buff[2]].empty()){
+                    cout << rank << ": " << "{" << buff[2] << "} doesn't have any children." << endl;
+                    done[buff[2]] = true;
                     int send_buff[] = {buff[2], DONE, buff[0], current_component};
                     MPI_Send(send_buff, BFS_MESSAGE_LENGTH, MPI_INT, buff[0] % size, BFS_TAG, MPI_COMM_WORLD);
                 }
@@ -220,30 +227,44 @@ int main(int argc, char* argv[]) {
             }
 
         } else if (buff[1] == ACCEPTED) {
-            cout << rank << ": " << "{" << buff[2] << "} Accepted the RSVP. Should Update children of {" << buff[0]
+            cout << rank << ": " << "{" << buff[0] << "} Accepted the RSVP. Should Update children of {" << buff[2]
                  << "} but it's not necessary." << endl;
         } else if (buff[1] == DECLINED){
-            cout << rank << ": " << "{" << buff[2] << "} Declined RSVP." << endl;
-            if (buff[2] == buff[0]) { //TODO make sure that rank == 0
-                cout << rank << ": " << "{" << buff[2] << "} supposed to be a root. But, it wasn't. Finding the next root." << endl;
+            cout << rank << ": " << "{" << buff[0] << "} Declined RSVP." << endl;
+            if (buff[2] == -size) { //TODO make sure that rank == 0
+                cout << rank << ": " << "{" << buff[0] << "} supposed to be a root. But, it wasn't. Finding the next root." << endl;
 
-                root += rank;
+                root ++;
 
-                int send_buff[] = {root, RSVP, root, current_component};
-                MPI_Send(send_buff, BFS_MESSAGE_LENGTH, MPI_INT, root % size, BFS_TAG, MPI_COMM_WORLD);
+                if (root <= max_node) {
+                    int send_buff[] = {-size, RSVP, root, current_component};
+                    MPI_Send(send_buff, BFS_MESSAGE_LENGTH, MPI_INT, root % size, BFS_TAG, MPI_COMM_WORLD);
+                }
 
+            } else {
+                done_list[buff[2]].insert(buff[0]);
+                if (done_list[buff[2]].size() == my_adj[buff[2]].size()) {
+                    cout << rank << ": " << "{" << buff[2]
+                         << "} has already visited all of its children. Sending done to parent." << endl;
+                    int send_buff[] = {buff[2], DONE, parent[buff[2]], current_component};
+                    MPI_Send(send_buff, BFS_MESSAGE_LENGTH, MPI_INT, parent[buff[2]] % size, BFS_TAG, MPI_COMM_WORLD);
+                    done[buff[2]] = true;
+                }
             }
         } else if (buff[1] == DONE) {
-
-            if (buff[0] == buff[2]) {
+            if (buff[2] == -size) {
                 cout << rank << ": " << "{" << buff[2] << "} was a root and now, is done. We are going for the next root in a connected component." << endl; //TODO make sure that rank == 0
                 done[buff[2]] = true;
 
                 current_component++;
-                root += rank;
+                root ++;
 
-                int send_buff[] = {root, RSVP, root, current_component};
-                MPI_Send(send_buff, BFS_MESSAGE_LENGTH, MPI_INT, root % size, BFS_TAG, MPI_COMM_WORLD);
+                cout << rank << ": " << "Current Component: " << current_component << endl;
+
+                if (root <= max_node) {
+                    int send_buff[] = {-size, RSVP, root, current_component};
+                    MPI_Send(send_buff, BFS_MESSAGE_LENGTH, MPI_INT, root % size, BFS_TAG, MPI_COMM_WORLD);
+                }
 
             } else {
 
