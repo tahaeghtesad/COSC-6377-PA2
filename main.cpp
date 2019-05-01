@@ -32,12 +32,12 @@ using namespace std;
 #define BFS_MESSAGE_LENGTH 4
 
 
-#define cout if(false)cout
+#define cout if(true)cout
 
 
 random_device rd;
 mt19937 gen(rd());
-uniform_int_distribution<> gen_dis(0, numeric_limits<int>::max());
+uniform_real_distribution<> gen_dis(0, 1);
 
 unordered_map<int, vector<int> > adj;
 
@@ -73,6 +73,25 @@ void init_adj_file(char *path) {
 
 //    cout << "Adjacency List initiated." << endl;
     cout << "Number of vertices/edges: " << adj.size() << "/" << edges << endl;
+}
+
+void generate_random_graph(int n, double p, double e){
+    if (p == -1)
+        p = (1-e) * 0.5 * log(n)/n;
+
+    int edges = 0;
+
+    for (int i = 0; i < n; i++){
+        for (int j = i; j < n; j++){
+            if (gen_dis(rd) < p){
+                adj[i].push_back(j);
+                adj[j].push_back(i);
+            }
+
+        }
+    }
+
+    cout << "Number of vertices/edges/p: " << adj.size() << "/" << edges << "/" << p << endl;
 }
 
 
